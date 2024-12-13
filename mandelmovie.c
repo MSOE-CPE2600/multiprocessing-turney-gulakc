@@ -18,7 +18,11 @@
 #define SEM_NAME "/mandel_sem"
 
 // Function prototypes
-void generate_frame(int frame, double x, double y, double scale, const char *outfile);
+void generate_frame(int frame, double x, double y, double scale, int num_threads, const char *outfile) {
+    char command[256];
+    snprintf(command, sizeof(command), "./mandel -x %f -y %f -s %f -t %d -o %s", x, y, scale, num_threads, outfile);
+    system(command);
+}
 
 int main(int argc, char *argv[]) {
     int num_processes = 1; // Default number of child processes
@@ -52,7 +56,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Generate images
-    double xcenter = 0.0, ycenter = 0.0, scale = 4.0;
+    double xcenter = 0.0, ycenter = 0.0, scale = 4.0;  
 
     for (int frame = 0; frame < TOTAL_IMAGES; frame++) {
         sem_wait(sem); // Wait for a semaphore slot
@@ -64,7 +68,7 @@ int main(int argc, char *argv[]) {
 
             printf("Frame %d generated: %s\n", frame, outfile);
             sem_post(sem); // Release semaphore slot
-            return 0;      // Exit child process
+            exit(0);       // Exit child process
         }
 
         // Update parameters for the next frame
@@ -74,9 +78,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Wait for all child processes to complete
-    for (int i = 0; i < num_processes; i++) {
-        wait(NULL);
-    }
+    while (wait(NULL) > 0);
 
     // Cleanup semaphore
     if (sem_close(sem) == -1) {
@@ -104,4 +106,5 @@ void generate_frame(int frame, double x, double y, double scale, const char *out
     snprintf(command, sizeof(command), "./mandel -x %f -y %f -s %f -o %s", x, y, scale, outfile);
     system(command);
 }
+
 
